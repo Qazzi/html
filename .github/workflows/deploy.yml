@@ -17,6 +17,14 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd /var/www/html
+          set -e
+          set -x
+          cd /var/www
+          if [ ! -d "html/.git" ]; then
+            sudo rm -rf html
+            git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git html
+          else
+            cd html
             git pull origin main
-            sudo systemctl restart apache2
+          fi
+          sudo systemctl restart apache2
