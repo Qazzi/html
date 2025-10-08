@@ -1,0 +1,33 @@
+name: Auto Rollback on Revert Commit
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  rollback:
+    if: contains(github.event.head_commit.message, 'Revert')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Revert commit detected – Deploying via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "Navigating to project directory..."
+            cd /var/www/html
+
+            echo "Fetching latest changes..."
+            sudo -u www-data git fetch origin main
+
+            echo "Resetting to revert commit SHA: ${{ github.sha }}"
+            sudo -u www-data git reset --hard ${{ github.sha }}
+
+            echo "Restarting Apache..."
+            sudo systemctl restart apache2
+
+            echo "Rollback (via revert commit) deployed to EC2."
